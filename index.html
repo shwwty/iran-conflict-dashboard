@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Iran Conflict — Live News Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   :root {
     --bg-primary: #0d1117;
@@ -24,6 +25,7 @@
     --guardian: #052962;
     --ap: #ee3124;
     --france24: #002f6c;
+    --fars: #0a8f3c;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -605,6 +607,230 @@
     .stats-row { grid-template-columns: 1fr 1fr; }
     .filter-bar { padding: 8px 16px 12px; }
   }
+
+  /* ===================== TAB NAVIGATION ===================== */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -1px;
+  }
+
+  .tab-btn:hover { color: var(--text-primary); }
+
+  .tab-btn.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+  }
+
+  .tab-btn svg { width: 16px; height: 16px; }
+
+  /* Panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  main.tab-panel.active { display: grid; }
+
+  /* ===================== MAP PANEL ===================== */
+  #tab-map {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+
+  .map-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .map-head h2 { font-size: 18px; font-weight: 600; }
+
+  .map-head p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    max-width: 640px;
+    margin-top: 4px;
+  }
+
+  .map-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+
+  .map-legend .lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .map-legend .lg-dot {
+    border-radius: 50%;
+    background: var(--accent-red);
+    border: 2px solid #fff;
+    box-shadow: 0 0 6px rgba(248,81,73,0.6);
+  }
+
+  #map {
+    width: 100%;
+    height: 72vh;
+    min-height: 460px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    z-index: 1;
+  }
+
+  .map-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* Leaflet dark overrides */
+  .leaflet-container { background: #0a0e14; font-family: inherit; }
+  .leaflet-tooltip.map-tip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    padding: 12px 14px;
+    width: 380px;
+    max-width: 90vw;
+    white-space: normal;
+  }
+  .leaflet-tooltip.map-tip::before { display: none; }
+  .tip-loc {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tip-loc .cnt {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-red);
+    background: rgba(248,81,73,0.12);
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+  .tip-item {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .tip-item .headline { font-weight: 600; color: var(--text-primary); }
+  .tip-item .meta {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tip-item .meta .date { color: var(--text-secondary); font-weight: 500; }
+  .tip-more { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  .leaflet-popup.map-pop .leaflet-popup-content-wrapper {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .leaflet-popup.map-pop .leaflet-popup-tip { background: var(--bg-card); border: 1px solid var(--border); }
+  .leaflet-popup.map-pop a.tip-link {
+    display: block;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 7px 0;
+    border-top: 1px solid var(--border);
+  }
+  .leaflet-popup.map-pop a.tip-link:first-of-type { border-top: none; }
+  .leaflet-popup.map-pop a.tip-link:hover { color: var(--accent-blue); }
+  .leaflet-popup.map-pop .meta {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .leaflet-control-attribution { background: rgba(13,17,23,0.7) !important; color: var(--text-muted) !important; }
+  .leaflet-control-attribution a { color: var(--text-secondary) !important; }
+
+  /* Base-map switcher menu */
+  .leaflet-control-layers {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+    color: var(--text-primary);
+  }
+  .leaflet-control-layers-toggle {
+    background-color: var(--bg-card) !important;
+    border-radius: 10px !important;
+    filter: invert(1) hue-rotate(180deg);
+  }
+  .leaflet-control-layers-expanded { padding: 10px 12px !important; }
+  .leaflet-control-layers-expanded .leaflet-control-layers-list { font-size: 13px; }
+  .leaflet-control-layers label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+  .leaflet-control-layers label:hover { color: var(--accent-blue); }
+  .leaflet-control-layers input[type="radio"] { accent-color: var(--accent-blue); }
+  .leaflet-control-layers-base::before {
+    content: 'Kartenmodus';
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 600px) {
+    #tab-map { padding: 16px; }
+    #map { height: 64vh; }
+    .tab-nav { padding: 0 16px; }
+  }
 </style>
 </head>
 <body>
@@ -645,7 +871,20 @@
     <div class="filter-chip" data-source="france24" onclick="filterSource('france24', this)">
       <span class="dot" style="background:var(--france24)"></span> France 24
     </div>
+    <div class="filter-chip" data-source="fars" onclick="filterSource('fars', this)">
+      <span class="dot" style="background:var(--fars)"></span> Fars News
+    </div>
   </div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" id="tabbtn-feed" onclick="switchTab('feed', this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h8v2H2v-2z"/></svg>
+      Live Feed
+    </button>
+    <button class="tab-btn" id="tabbtn-map" onclick="switchTab('map', this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a5 5 0 0 0-5 5c0 3.5 5 11 5 11s5-7.5 5-11a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      Conflict Map
+    </button>
+  </nav>
 </header>
 
 <div class="breaking-bar" id="breaking-bar">
@@ -655,7 +894,7 @@
   </div>
 </div>
 
-<main>
+<main id="tab-feed" class="tab-panel active">
   <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card">
@@ -675,7 +914,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Sources Active</div>
-      <div class="stat-value" id="stat-sources">5</div>
+      <div class="stat-value" id="stat-sources">6</div>
       <div class="stat-sub">news outlets</div>
     </div>
   </div>
@@ -727,13 +966,30 @@
         <strong style="color:var(--aljazeera)">Al Jazeera</strong> serves as the primary source, supplemented by
         <strong style="color:var(--bbc)">BBC News</strong>,
         <strong style="color:var(--reuters)">Reuters</strong>,
-        <strong style="color:var(--guardian)">The Guardian</strong>, and
-        <strong style="color:var(--france24)">France 24</strong>.
+        <strong style="color:var(--guardian)">The Guardian</strong>,
+        <strong style="color:var(--france24)">France 24</strong>, and
+        <strong style="color:var(--fars)">Fars News (English)</strong>.
         Content refreshes automatically every 2 minutes.
       </p>
     </div>
   </div>
 </main>
+
+<!-- Map Panel -->
+<section id="tab-map" class="tab-panel">
+  <div class="map-head">
+    <div>
+      <h2>Conflict Map — Middle East</h2>
+      <p>Latest reports plotted by the location they refer to. Hover a marker for a quick overview; click it to open the underlying articles.</p>
+    </div>
+    <div class="map-legend">
+      <span class="lg"><span class="lg-dot" style="width:8px;height:8px"></span> few reports</span>
+      <span class="lg"><span class="lg-dot" style="width:16px;height:16px"></span> many reports</span>
+      <span class="lg" id="map-located-count">—</span>
+    </div>
+  </div>
+  <div id="map"><div class="map-empty">Loading map…</div></div>
+</section>
 
 <footer>
   <span>Iran Conflict Monitor — Aggregated from public RSS feeds</span>
@@ -743,13 +999,24 @@
     <a href="https://www.reuters.com" target="_blank">Reuters</a>
     <a href="https://www.theguardian.com" target="_blank">The Guardian</a>
     <a href="https://www.france24.com" target="_blank">France 24</a>
+    <a href="https://en.farsnews.ir" target="_blank">Fars News</a>
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 // ===================== CONFIG =====================
 const REFRESH_INTERVAL = 120; // seconds
 const RSS2JSON_BASE = 'https://api.rss2json.com/v1/api.json?rss_url=';
+
+// CORS proxies that return the RAW, LIVE feed (no server-side caching delay).
+// We parse the XML directly in the browser so articles appear as soon as the
+// source publishes them, instead of waiting for rss2json's cache to refresh.
+const RAW_PROXIES = [
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}&_=${Date.now()}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`
+];
 
 const SOURCES = {
   aljazeera: {
@@ -792,6 +1059,15 @@ const SOURCES = {
       'https://www.france24.com/en/middle-east/rss'
     ],
     homepage: 'https://www.france24.com'
+  },
+  fars: {
+    name: 'Fars News',
+    color: '#0a8f3c',
+    feeds: [
+      'https://en.farsnews.ir/rss',
+      'https://en.farsnews.ir/Politics/rss'
+    ],
+    homepage: 'https://en.farsnews.ir'
   }
 };
 
@@ -805,6 +1081,58 @@ const IRAN_KEYWORDS = [
   'us-iran', 'israel-iran', 'pentagon', 'centcom'
 ];
 
+// ===================== GEO GAZETTEER =====================
+// Ordered most-specific -> most-general. The first matching entry wins,
+// so nuclear sites / cities are placed before whole-country fallbacks.
+const LOCATIONS = [
+  // --- Iran: specific sites & cities ---
+  { name: 'Natanz', coords: [33.72, 51.91], terms: ['natanz'] },
+  { name: 'Fordow', coords: [34.88, 50.99], terms: ['fordow', 'fordo'] },
+  { name: 'Isfahan', coords: [32.65, 51.67], terms: ['isfahan', 'esfahan'] },
+  { name: 'Arak', coords: [34.09, 49.69], terms: ['arak'] },
+  { name: 'Bushehr', coords: [28.92, 50.84], terms: ['bushehr'] },
+  { name: 'Bandar Abbas', coords: [27.18, 56.27], terms: ['bandar abbas'] },
+  { name: 'Strait of Hormuz', coords: [26.57, 56.40], terms: ['hormuz'] },
+  { name: 'Kerman', coords: [30.28, 57.08], terms: ['kerman'] },
+  { name: 'Tabriz', coords: [38.08, 46.29], terms: ['tabriz'] },
+  { name: 'Mashhad', coords: [36.30, 59.61], terms: ['mashhad'] },
+  { name: 'Shiraz', coords: [29.59, 52.58], terms: ['shiraz'] },
+  { name: 'Tehran', coords: [35.69, 51.39], terms: ['tehran', 'iran', 'iranian', 'persian', 'khamenei', 'irgc', 'revolutionary guard'] },
+  // --- Israel ---
+  { name: 'Tel Aviv', coords: [32.08, 34.78], terms: ['tel aviv'] },
+  { name: 'Jerusalem', coords: [31.78, 35.22], terms: ['jerusalem'] },
+  { name: 'Haifa', coords: [32.79, 34.99], terms: ['haifa'] },
+  { name: 'Israel', coords: [31.46, 34.99], terms: ['israel', 'israeli', 'idf', 'netanyahu'] },
+  // --- Palestinian territories ---
+  { name: 'Gaza', coords: [31.42, 34.37], terms: ['gaza'] },
+  { name: 'West Bank', coords: [31.95, 35.30], terms: ['west bank'] },
+  // --- Lebanon ---
+  { name: 'Beirut', coords: [33.89, 35.50], terms: ['beirut', 'lebanon', 'lebanese', 'hezbollah'] },
+  // --- Syria ---
+  { name: 'Damascus', coords: [33.51, 36.29], terms: ['damascus', 'syria', 'syrian'] },
+  // --- Iraq ---
+  { name: 'Baghdad', coords: [33.31, 44.36], terms: ['baghdad', 'iraq', 'iraqi'] },
+  { name: 'Erbil', coords: [36.19, 44.01], terms: ['erbil', 'irbil'] },
+  // --- Yemen ---
+  { name: 'Sanaa', coords: [15.37, 44.19], terms: ['sanaa', 'yemen', 'yemeni', 'houthi'] },
+  // --- Gulf / others ---
+  { name: 'Doha', coords: [25.29, 51.53], terms: ['doha', 'qatar', 'qatari'] },
+  { name: 'Dubai', coords: [25.20, 55.27], terms: ['dubai', 'uae', 'emirates'] },
+  { name: 'Riyadh', coords: [24.71, 46.68], terms: ['riyadh', 'saudi'] },
+  { name: 'Muscat', coords: [23.59, 58.41], terms: ['oman', 'muscat'] },
+  { name: 'Manama', coords: [26.23, 50.59], terms: ['bahrain', 'manama'] },
+  { name: 'Red Sea', coords: [20.28, 38.51], terms: ['red sea'] },
+  { name: 'Ankara', coords: [39.93, 32.86], terms: ['turkey', 'turkish', 'ankara'] }
+];
+
+function detectLocation(article) {
+  const text = ((article.title || '') + ' ' + (article.excerpt || '')).toLowerCase();
+  for (const loc of LOCATIONS) {
+    if (loc.terms.some(t => text.includes(t))) return loc;
+  }
+  return null;
+}
+
 // ===================== STATE =====================
 let allArticles = [];
 let activeFilter = 'all';
@@ -813,19 +1141,96 @@ let autoRefresh = true;
 let countdownValue = REFRESH_INTERVAL;
 let countdownTimer = null;
 let refreshTimer = null;
+let activeTab = 'feed';
+let map = null;
+let markerLayer = null;
 
 // ===================== FETCH =====================
-async function fetchFeed(url) {
+function attrOf(item, tag, attr) {
+  const els = item.getElementsByTagName(tag);
+  for (const e of els) {
+    const v = e.getAttribute(attr);
+    if (v) return v;
+  }
+  return '';
+}
+
+function textOf(item, ...tags) {
+  for (const tag of tags) {
+    const els = item.getElementsByTagName(tag);
+    if (els.length && els[0].textContent.trim()) return els[0].textContent.trim();
+  }
+  return '';
+}
+
+// Parse a raw RSS/Atom XML string into the same item shape the app expects.
+function parseRss(xmlText) {
+  let doc;
   try {
-    const res = await fetch(RSS2JSON_BASE + encodeURIComponent(url));
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.status === 'ok') return data.items || [];
-    return [];
+    doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  } catch (e) { return null; }
+  if (!doc || doc.getElementsByTagName('parsererror').length) return null;
+
+  let nodes = Array.from(doc.getElementsByTagName('item'));
+  if (!nodes.length) nodes = Array.from(doc.getElementsByTagName('entry')); // Atom
+
+  return nodes.map(it => {
+    // Link (RSS uses text content; Atom uses href attribute)
+    let link = textOf(it, 'link');
+    const linkEls = it.getElementsByTagName('link');
+    for (const le of linkEls) {
+      const rel = le.getAttribute('rel');
+      const href = le.getAttribute('href');
+      if (href && (!rel || rel === 'alternate')) { link = href; break; }
+    }
+    const description = textOf(it, 'description', 'summary');
+    const content = textOf(it, 'content:encoded', 'content') || description;
+    const thumbnail = attrOf(it, 'media:thumbnail', 'url')
+      || attrOf(it, 'media:content', 'url')
+      || attrOf(it, 'enclosure', 'url');
+    const pubDate = textOf(it, 'pubDate', 'published', 'updated', 'dc:date', 'date');
+
+    return {
+      title: textOf(it, 'title'),
+      link,
+      pubDate,
+      description,
+      content,
+      thumbnail,
+      enclosure: { link: attrOf(it, 'enclosure', 'url') }
+    };
+  }).filter(i => i.title);
+}
+
+async function fetchViaRaw(url) {
+  for (const make of RAW_PROXIES) {
+    try {
+      const res = await fetch(make(url), { cache: 'no-store' });
+      if (!res.ok) continue;
+      const text = await res.text();
+      const items = parseRss(text);
+      if (items && items.length) return items;
+    } catch (e) { /* try next proxy */ }
+  }
+  return null;
+}
+
+async function fetchFeed(url) {
+  // 1) Live raw fetch (no cache lag)
+  const live = await fetchViaRaw(url);
+  if (live) return live;
+
+  // 2) Fallback: rss2json (cache-busted)
+  try {
+    const res = await fetch(RSS2JSON_BASE + encodeURIComponent(url) + '&_=' + Date.now(), { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ok') return data.items || [];
+    }
   } catch (e) {
     console.warn('Feed fetch failed:', url, e.message);
-    return [];
   }
+  return [];
 }
 
 function isIranRelated(item) {
@@ -1020,6 +1425,137 @@ function updateBreakingBar() {
   }
 }
 
+// ===================== MAP =====================
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function fmtDateTime(d) {
+  if (!d || isNaN(d)) return '';
+  try {
+    return d.toLocaleString([], { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return ''; }
+}
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('tab-feed').classList.toggle('active', tab === 'feed');
+  document.getElementById('tab-map').classList.toggle('active', tab === 'map');
+
+  if (tab === 'map') {
+    initMap();
+    renderMap();
+    // Leaflet needs a size recalculation once the container becomes visible.
+    setTimeout(() => { if (map) map.invalidateSize(); }, 60);
+  }
+}
+
+function initMap() {
+  if (map) return;
+  const el = document.getElementById('map');
+  el.innerHTML = '';
+  map = L.map('map', {
+    center: [30.5, 45.0],
+    zoom: 5,
+    minZoom: 3,
+    maxZoom: 9,
+    worldCopyJump: true,
+    scrollWheelZoom: true
+  });
+
+  // ---- Base map modes (all free, no API key) ----
+  const darkPolitical = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+  });
+  const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+  });
+  const topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenTopoMap (CC-BY-SA) &copy; OpenStreetMap', subdomains: 'abc', maxZoom: 17
+  });
+  // Population density = dark base + NASA SEDAC GPW v4 density overlay
+  const popOverlay = L.tileLayer(
+    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GPW_Population_Density_2020/default/2020-01-01/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
+    { attribution: 'Population: NASA SEDAC GPW v4', maxNativeZoom: 7, maxZoom: 19, opacity: 0.85 }
+  );
+  const populationDensity = L.layerGroup([darkPolitical, popOverlay]);
+
+  const baseLayers = {
+    'Politisch – leer (dunkel)': darkPolitical,
+    'Politisch': political,
+    'Topografisch': topographic,
+    'Bevölkerungsdichte': populationDensity
+  };
+
+  darkPolitical.addTo(map); // default = current blank political map
+  L.control.layers(baseLayers, null, { collapsed: true, position: 'topright' }).addTo(map);
+
+  markerLayer = L.layerGroup().addTo(map);
+}
+
+function renderMap() {
+  if (!map) return;
+  markerLayer.clearLayers();
+
+  // Group located articles by location name
+  const groups = {};
+  for (const a of allArticles) {
+    const loc = detectLocation(a);
+    if (!loc) continue;
+    if (!groups[loc.name]) groups[loc.name] = { loc, items: [] };
+    groups[loc.name].items.push(a);
+  }
+
+  const groupList = Object.values(groups);
+  const located = groupList.reduce((n, g) => n + g.items.length, 0);
+  const lc = document.getElementById('map-located-count');
+  if (lc) lc.textContent = `${located} reports across ${groupList.length} locations`;
+
+  for (const g of groupList) {
+    g.items.sort((a, b) => b.date - a.date);
+    const count = g.items.length;
+    const radius = Math.min(8 + count * 2.2, 26);
+
+    const marker = L.circleMarker(g.loc.coords, {
+      radius,
+      color: '#ffffff',
+      weight: 1.5,
+      fillColor: '#f85149',
+      fillOpacity: 0.75
+    });
+
+    // Hover tooltip — date + headline for the most recent reports
+    const top = g.items.slice(0, 3).map(a => `
+      <div class="tip-item">
+        <div class="meta">
+          <span style="color:${a.sourceColor}">${escapeHtml(a.sourceName)}</span>
+          <span class="date">${fmtDateTime(a.date)}</span>
+        </div>
+        <div class="headline">${escapeHtml(a.title)}</div>
+      </div>`).join('');
+    const more = count > 3 ? `<div class="tip-more">+ ${count - 3} more — click to open all</div>` : `<div class="tip-more">Click to open</div>`;
+    marker.bindTooltip(
+      `<div class="tip-loc">📍 ${escapeHtml(g.loc.name)} <span class="cnt">${count}</span></div>${top}${more}`,
+      { className: 'map-tip', direction: 'top', offset: [0, -radius], sticky: true, opacity: 1 }
+    );
+
+    // Click popup — list of articles with links
+    const links = g.items.slice(0, 8).map(a => `
+      <a class="tip-link" href="${a.link}" target="_blank" rel="noopener">
+        <span class="meta" style="color:${a.sourceColor}">${escapeHtml(a.sourceName)} · ${fmtDateTime(a.date)}</span><br>
+        ${escapeHtml(a.title)}
+      </a>`).join('');
+    marker.bindPopup(
+      `<div style="font-weight:700;font-size:13px;margin-bottom:6px">📍 ${escapeHtml(g.loc.name)} — ${count} report${count>1?'s':''}</div>${links}`,
+      { className: 'map-pop', maxWidth: 300, minWidth: 240 }
+    );
+
+    marker.addTo(markerLayer);
+  }
+}
+
 // ===================== CONTROLS =====================
 function filterSource(source, el) {
   activeFilter = source;
@@ -1072,6 +1608,7 @@ async function refreshData() {
     renderSourceList();
     renderStats();
     updateBreakingBar();
+    if (map && activeTab === 'map') renderMap();
   } catch (e) {
     console.error('Refresh failed:', e);
     document.getElementById('news-feed').innerHTML =
