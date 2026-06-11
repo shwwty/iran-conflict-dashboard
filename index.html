@@ -1202,10 +1202,21 @@ function parseRss(xmlText) {
   }).filter(i => i.title);
 }
 
+// fetch with a hard timeout so a dead/slow proxy can never stall a refresh.
+async function fetchWithTimeout(url, ms = 12000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 async function fetchViaRaw(url) {
   for (const make of RAW_PROXIES) {
     try {
-      const res = await fetch(make(url), { cache: 'no-store' });
+      const res = await fetchWithTimeout(make(url));
       if (!res.ok) continue;
       const text = await res.text();
       const items = parseRss(text);
@@ -1222,7 +1233,7 @@ async function fetchFeed(url) {
 
   // 2) Fallback: rss2json (cache-busted)
   try {
-    const res = await fetch(RSS2JSON_BASE + encodeURIComponent(url) + '&_=' + Date.now(), { cache: 'no-store' });
+    const res = await fetchWithTimeout(RSS2JSON_BASE + encodeURIComponent(url) + '&_=' + Date.now());
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ok') return data.items || [];
