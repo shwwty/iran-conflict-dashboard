@@ -826,10 +826,23 @@
     margin-bottom: 6px;
   }
 
+  /* ===================== FLIGHT & SHIP PANELS ===================== */
+  #tab-flights, #tab-ships {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+
+  .embed-container iframe {
+    display: block;
+  }
+
   @media (max-width: 600px) {
-    #tab-map { padding: 16px; }
+    #tab-map, #tab-flights, #tab-ships { padding: 16px; }
     #map { height: 64vh; }
-    .tab-nav { padding: 0 16px; }
+    .tab-nav { padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
+    .tab-nav::-webkit-scrollbar { display: none; }
+    .embed-container iframe { height: 60vh !important; min-height: 360px !important; }
   }
 </style>
 </head>
@@ -882,7 +895,15 @@
     </button>
     <button class="tab-btn" id="tabbtn-map" onclick="switchTab('map', this)">
       <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a5 5 0 0 0-5 5c0 3.5 5 11 5 11s5-7.5 5-11a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
-      Conflict Map
+      Konflikt-Karte
+    </button>
+    <button class="tab-btn" id="tabbtn-flights" onclick="switchTab('flights', this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M14.5 1.5l-4.3 13.2-2.8-5.1L2.3 6.8 14.5 1.5zM8.1 9.3l2.5 4.6 3-9.2-5.5 4.6z"/></svg>
+      Flugverkehr
+    </button>
+    <button class="tab-btn" id="tabbtn-ships" onclick="switchTab('ships', this)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l6 7H2l6-7zM1 10h14l-1.5 4H2.5L1 10z"/></svg>
+      Schiffsverkehr
     </button>
   </nav>
 </header>
@@ -979,16 +1000,46 @@
 <section id="tab-map" class="tab-panel">
   <div class="map-head">
     <div>
-      <h2>Conflict Map — Middle East</h2>
-      <p>Latest reports plotted by the location they refer to. Hover a marker for a quick overview; click it to open the underlying articles.</p>
+      <h2>Konflikt-Karte — Beteiligte Länder</h2>
+      <p>Politische Karte mit farblicher Kennzeichnung der am Iran-Konflikt beteiligten Staaten. Hauptkriegsgegner sind rot markiert, Nebenschauplätze orange. Klicke auf ein Land für Details. Nachrichten-Marker zeigen aktuelle Berichte.</p>
     </div>
     <div class="map-legend">
-      <span class="lg"><span class="lg-dot" style="width:8px;height:8px"></span> few reports</span>
-      <span class="lg"><span class="lg-dot" style="width:16px;height:16px"></span> many reports</span>
+      <span class="lg"><span class="lg-dot" style="width:14px;height:14px;border-radius:3px;background:#d32f2f;border:2px solid #ff6659"></span> Hauptkriegsgegner</span>
+      <span class="lg"><span class="lg-dot" style="width:14px;height:14px;border-radius:3px;background:#e65100;border:2px solid #ff9a3c"></span> Nebenschauplatz / Verbündete</span>
+      <span class="lg"><span class="lg-dot" style="width:14px;height:14px;border-radius:3px;background:#1565c0;border:2px solid #5e92f3"></span> Unterstützende Akteure</span>
+      <span class="lg"><span class="lg-dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent-red);border:2px solid #fff"></span> Nachrichten</span>
       <span class="lg" id="map-located-count">—</span>
     </div>
   </div>
-  <div id="map"><div class="map-empty">Loading map…</div></div>
+  <div id="map"><div class="map-empty">Karte wird geladen…</div></div>
+</section>
+
+<!-- FLIGHT TRAFFIC -->
+<section id="tab-flights" class="tab-panel">
+  <div class="map-head">
+    <div>
+      <h2>Live-Flugverkehr — Naher Osten</h2>
+      <p>Echtzeit-Flugbewegungen über dem Konfliktgebiet via Flightradar24. Zeigt zivilen und teilweise militärischen Flugverkehr. Klicke auf ein Flugzeug für Details.</p>
+    </div>
+  </div>
+  <div class="embed-container" id="flights-container">
+    <iframe id="flights-iframe" src="" style="width:100%;height:72vh;min-height:460px;border:1px solid var(--border);border-radius:12px;background:var(--bg-secondary);" allowfullscreen loading="lazy"></iframe>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">Quelle: <a href="https://www.flightradar24.com" target="_blank" style="color:var(--text-secondary)">Flightradar24</a> — Echtzeit-Flugdaten</div>
+  </div>
+</section>
+
+<!-- SHIP TRAFFIC -->
+<section id="tab-ships" class="tab-panel">
+  <div class="map-head">
+    <div>
+      <h2>Live-Schiffsverkehr — Persischer Golf & Region</h2>
+      <p>Echtzeit-Schiffsbewegungen im Persischen Golf, der Straße von Hormus und dem Arabischen Meer via MarineTraffic. Zeigt Handels- und Militärschiffe.</p>
+    </div>
+  </div>
+  <div class="embed-container" id="ships-container">
+    <iframe id="ships-iframe" src="" style="width:100%;height:72vh;min-height:460px;border:1px solid var(--border);border-radius:12px;background:var(--bg-secondary);" allowfullscreen loading="lazy"></iframe>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">Quelle: <a href="https://www.marinetraffic.com" target="_blank" style="color:var(--text-secondary)">MarineTraffic</a> — Echtzeit-Schiffsdaten (AIS)</div>
+  </div>
 </section>
 
 <footer>
@@ -1472,23 +1523,70 @@ function switchTab(tab, el) {
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (el) el.classList.add('active');
-  document.getElementById('tab-feed').classList.toggle('active', tab === 'feed');
-  document.getElementById('tab-map').classList.toggle('active', tab === 'map');
+  ['feed', 'map', 'flights', 'ships'].forEach(t => {
+    const panel = document.getElementById('tab-' + t);
+    if (panel) panel.classList.toggle('active', tab === t);
+  });
 
   if (tab === 'map') {
     initMap();
     renderMap();
-    // Leaflet needs a size recalculation once the container becomes visible.
     setTimeout(() => { if (map) map.invalidateSize(); }, 60);
   }
+
+  // Lazy-load flight iframe (only first time)
+  if (tab === 'flights') {
+    const fr = document.getElementById('flights-iframe');
+    if (fr && !fr.src.includes('flightradar')) {
+      // Flightradar24 embed centered on Iran/Middle East region
+      fr.src = 'https://www.flightradar24.com/simple_index.php?lat=30.0&lon=50.0&z=5';
+    }
+  }
+
+  // Lazy-load ship iframe (only first time)
+  if (tab === 'ships') {
+    const mt = document.getElementById('ships-iframe');
+    if (mt && !mt.src.includes('marinetraffic')) {
+      // MarineTraffic embed centered on Persian Gulf / Strait of Hormuz
+      mt.src = 'https://www.marinetraffic.com/en/ais/embed/zoom:6/centery:26.5/centerx:53.0/maptype:4/shownames:false/mmsi:0/shipid:0/port:0/showall:no/showmenu:true/showsearch:true';
+    }
+  }
 }
+
+// ---- Country involvement classification ----
+const CONFLICT_ROLES = {
+  // Hauptkriegsgegner (main combatants) — red
+  'Iran':        { role: 'main', label: 'Iran — Hauptziel des Konflikts', color: '#d32f2f', border: '#ff6659' },
+  'Israel':      { role: 'main', label: 'Israel — Hauptaggressor / Angreifer', color: '#d32f2f', border: '#ff6659' },
+  'United States of America': { role: 'main', label: 'USA — Militärische Beteiligung', color: '#d32f2f', border: '#ff6659' },
+
+  // Nebenschauplätze / Verbündete (secondary theaters / proxies) — orange
+  'Lebanon':     { role: 'secondary', label: 'Libanon — Hisbollah / Stellvertreterkonflikt', color: '#e65100', border: '#ff9a3c' },
+  'Syria':       { role: 'secondary', label: 'Syrien — Iranische Militärpräsenz', color: '#e65100', border: '#ff9a3c' },
+  'Iraq':        { role: 'secondary', label: 'Irak — Pro-iranische Milizen / US-Basen', color: '#e65100', border: '#ff9a3c' },
+  'Yemen':       { role: 'secondary', label: 'Jemen — Huthi-Bewegung / Stellvertreter', color: '#e65100', border: '#ff9a3c' },
+
+  // Unterstützende Akteure / diplomatisch involviert — blue
+  'United Kingdom':     { role: 'support', label: 'Großbritannien — Koalitionspartner', color: '#1565c0', border: '#5e92f3' },
+  'Saudi Arabia':       { role: 'support', label: 'Saudi-Arabien — Regionalmacht', color: '#1565c0', border: '#5e92f3' },
+  'United Arab Emirates': { role: 'support', label: 'VAE — Regionaler Akteur', color: '#1565c0', border: '#5e92f3' },
+  'Turkey':             { role: 'support', label: 'Türkei — NATO / Vermittler', color: '#1565c0', border: '#5e92f3' },
+  'Qatar':              { role: 'support', label: 'Katar — Diplomatie / Vermittlung', color: '#1565c0', border: '#5e92f3' },
+  'Jordan':             { role: 'support', label: 'Jordanien — Luftraum / US-Basen', color: '#1565c0', border: '#5e92f3' },
+  'Pakistan':           { role: 'support', label: 'Pakistan — Nachbar / Vermittler', color: '#1565c0', border: '#5e92f3' },
+  'Russia':             { role: 'support', label: 'Russland — Diplomatische Unterstützung Irans', color: '#1565c0', border: '#5e92f3' },
+  'China':              { role: 'support', label: 'China — Diplomatische Unterstützung Irans', color: '#1565c0', border: '#5e92f3' },
+  'Bahrain':            { role: 'support', label: 'Bahrain — US-Marinebasis / 5. Flotte', color: '#1565c0', border: '#5e92f3' },
+};
+
+let conflictGeoLayer = null;
 
 function initMap() {
   if (map) return;
   const el = document.getElementById('map');
   el.innerHTML = '';
   map = L.map('map', {
-    center: [30.5, 45.0],
+    center: [30.0, 48.0],
     zoom: 5,
     minZoom: 3,
     maxZoom: 9,
@@ -1496,34 +1594,100 @@ function initMap() {
     scrollWheelZoom: true
   });
 
-  // ---- Base map modes (all free, no API key) ----
-  const darkPolitical = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // Political base map (dark)
+  const darkPolitical = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
   });
-  const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  // Labels as separate layer so GeoJSON sits between base and labels
+  const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane'
+  });
+  const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
   });
-  const topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenTopoMap (CC-BY-SA) &copy; OpenStreetMap', subdomains: 'abc', maxZoom: 17
+  const politicalLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane'
   });
-  // Population density = dark base + NASA SEDAC GPW v4 density overlay
-  const popOverlay = L.tileLayer(
-    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GPW_Population_Density_2020/default/2020-01-01/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
-    { attribution: 'Population: NASA SEDAC GPW v4', maxNativeZoom: 7, maxZoom: 19, opacity: 0.85 }
-  );
-  const populationDensity = L.layerGroup([darkPolitical, popOverlay]);
 
   const baseLayers = {
-    'Politisch – leer (dunkel)': darkPolitical,
-    'Politisch': political,
-    'Topografisch': topographic,
-    'Bevölkerungsdichte': populationDensity
+    'Dunkel (Standard)': L.layerGroup([darkPolitical, labels]),
+    'Politisch (hell)': L.layerGroup([political, politicalLabels])
   };
 
-  darkPolitical.addTo(map); // default = current blank political map
+  baseLayers['Dunkel (Standard)'].addTo(map);
   L.control.layers(baseLayers, null, { collapsed: true, position: 'topright' }).addTo(map);
 
   markerLayer = L.layerGroup().addTo(map);
+
+  // Load GeoJSON for country boundaries and color them
+  loadConflictCountries();
+}
+
+async function loadConflictCountries() {
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    const geojson = await res.json();
+
+    conflictGeoLayer = L.geoJSON(geojson, {
+      style: feature => {
+        const name = feature.properties.ADMIN || feature.properties.name || '';
+        const role = CONFLICT_ROLES[name];
+        if (role) {
+          return {
+            fillColor: role.color,
+            fillOpacity: 0.45,
+            color: role.border,
+            weight: 2,
+            opacity: 0.8
+          };
+        }
+        // Non-involved countries: very subtle
+        return {
+          fillColor: '#1a1f26',
+          fillOpacity: 0.15,
+          color: '#30363d',
+          weight: 0.5,
+          opacity: 0.4
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.ADMIN || feature.properties.name || '';
+        const role = CONFLICT_ROLES[name];
+        if (role) {
+          layer.bindTooltip(
+            `<div style="font-weight:700;font-size:13px;margin-bottom:4px">${role.label}</div>
+             <div style="font-size:11px;color:var(--text-secondary)">
+               Rolle: <span style="color:${role.border};font-weight:600">
+                 ${role.role === 'main' ? 'Hauptkriegsgegner' : role.role === 'secondary' ? 'Nebenschauplatz' : 'Unterstützender Akteur'}
+               </span>
+             </div>`,
+            { className: 'map-tip', direction: 'top', sticky: true, opacity: 1 }
+          );
+          // Highlight on hover
+          layer.on('mouseover', () => {
+            layer.setStyle({ fillOpacity: 0.7, weight: 3 });
+          });
+          layer.on('mouseout', () => {
+            conflictGeoLayer.resetStyle(layer);
+          });
+        }
+      },
+      filter: feature => {
+        // Only render countries in the Middle East / relevant region + major powers
+        const name = feature.properties.ADMIN || feature.properties.name || '';
+        if (CONFLICT_ROLES[name]) return true;
+        // Also render nearby countries for context
+        const nearby = ['Kuwait','Oman','Afghanistan','Turkmenistan','Azerbaijan','Armenia','Georgia',
+          'Egypt','Cyprus','Greece','Eritrea','Djibouti','Somalia','Sudan','Libya','Palestine'];
+        return nearby.includes(name);
+      }
+    }).addTo(map);
+
+    // Bring markers above the GeoJSON layer
+    markerLayer.bringToFront();
+  } catch (e) {
+    console.warn('GeoJSON load failed:', e);
+  }
 }
 
 function renderMap() {
