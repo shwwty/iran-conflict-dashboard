@@ -1202,8 +1202,8 @@ function parseRss(xmlText) {
   }).filter(i => i.title);
 }
 
-// fetch with a hard timeout so a dead/slow proxy can never stall a refresh.
-async function fetchWithTimeout(url, ms = 12000) {
+// fetch with a hard timeout — short so dead proxies don't stall everything
+async function fetchWithTimeout(url, ms = 6000) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
   try {
@@ -1213,35 +1213,28 @@ async function fetchWithTimeout(url, ms = 12000) {
   }
 }
 
-async function fetchViaRaw(url) {
-  for (const make of RAW_PROXIES) {
-    try {
-      const res = await fetchWithTimeout(make(url));
-      if (!res.ok) continue;
-      const text = await res.text();
-      const items = parseRss(text);
-      if (items && items.length) return items;
-    } catch (e) { /* try next proxy */ }
-  }
-  return null;
-}
-
+// Race ALL proxies + rss2json in parallel — first valid result wins
 async function fetchFeed(url) {
-  // 1) Live raw fetch (no cache lag)
-  const live = await fetchViaRaw(url);
-  if (live) return live;
+  const attempts = [
+    // All CORS proxies at once
+    ...RAW_PROXIES.map(make =>
+      fetchWithTimeout(make(url), 6000)
+        .then(res => { if (!res.ok) throw new Error('not ok'); return res.text(); })
+        .then(text => { const items = parseRss(text); if (!items || !items.length) throw new Error('empty'); return items; })
+    ),
+    // rss2json in parallel too
+    fetchWithTimeout(RSS2JSON_BASE + encodeURIComponent(url) + '&_=' + Date.now(), 8000)
+      .then(res => { if (!res.ok) throw new Error('not ok'); return res.json(); })
+      .then(data => { if (data.status !== 'ok' || !data.items?.length) throw new Error('empty'); return data.items; })
+  ];
 
-  // 2) Fallback: rss2json (cache-busted)
   try {
-    const res = await fetchWithTimeout(RSS2JSON_BASE + encodeURIComponent(url) + '&_=' + Date.now());
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'ok') return data.items || [];
-    }
+    // Promise.any returns the FIRST successful result — no waiting for slow ones
+    return await Promise.any(attempts);
   } catch (e) {
-    console.warn('Feed fetch failed:', url, e.message);
+    console.warn('All proxies failed for:', url);
+    return [];
   }
-  return [];
 }
 
 function isIranRelated(item) {
@@ -1272,51 +1265,78 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+// Progressive loading: each source renders as soon as it arrives
 async function fetchAllSources() {
-  const promises = [];
+  let loadedCount = 0;
+  const totalSources = Object.keys(SOURCES).length;
+  const feed = document.getElementById('news-feed');
 
-  for (const [key, source] of Object.entries(SOURCES)) {
-    for (const feedUrl of source.feeds) {
-      promises.push(
-        fetchFeed(feedUrl).then(items =>
-          items.map(item => ({
-            ...item,
-            sourceKey: key,
-            sourceName: source.name,
-            sourceColor: source.color,
-            excerpt: stripHtml(item.description).substring(0, 250),
-            image: extractImage(item),
-            date: new Date(item.pubDate),
-            iranRelated: isIranRelated(item)
-          }))
-        )
-      );
-    }
-  }
+  // Show progress bar during loading
+  feed.innerHTML = `
+    <div style="padding:30px 0;text-align:center">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div id="load-progress" style="font-size:13px;color:var(--text-secondary)">Loading sources... 0/${totalSources}</div>
+      <div style="margin:12px auto 0;width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div id="load-bar" style="width:0%;height:100%;background:var(--accent-blue);border-radius:2px;transition:width 0.3s"></div>
+      </div>
+    </div>`;
 
-  const results = await Promise.allSettled(promises);
-  let articles = [];
+  const sourcePromises = Object.entries(SOURCES).map(([key, source]) => {
+    const feedPromises = source.feeds.map(feedUrl =>
+      fetchFeed(feedUrl).then(items =>
+        items.map(item => ({
+          ...item,
+          sourceKey: key,
+          sourceName: source.name,
+          sourceColor: source.color,
+          excerpt: stripHtml(item.description).substring(0, 250),
+          image: extractImage(item),
+          date: new Date(item.pubDate),
+          iranRelated: isIranRelated(item)
+        }))
+      )
+    );
 
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      articles = articles.concat(result.value);
-    }
-  }
+    return Promise.allSettled(feedPromises).then(results => {
+      let items = [];
+      for (const r of results) {
+        if (r.status === 'fulfilled') items = items.concat(r.value);
+      }
 
-  // Filter Iran-related, deduplicate by title, sort by date
-  articles = articles.filter(a => a.iranRelated);
+      // Progressive update: add this source's articles immediately
+      const iranItems = items.filter(a => a.iranRelated);
+      allArticles = allArticles.concat(iranItems);
+      deduplicateAndSort();
+      loadedCount++;
 
+      // Update progress
+      const prog = document.getElementById('load-progress');
+      const bar = document.getElementById('load-bar');
+      if (prog) prog.textContent = `Loading sources... ${loadedCount}/${totalSources} — ${source.name} ✓`;
+      if (bar) bar.style.width = `${(loadedCount / totalSources) * 100}%`;
+
+      // Re-render with what we have so far
+      renderFeed();
+      renderLiveBlog();
+      renderSourceList();
+      renderStats();
+      updateBreakingBar();
+    });
+  });
+
+  await Promise.allSettled(sourcePromises);
+  return allArticles;
+}
+
+function deduplicateAndSort() {
   const seen = new Set();
-  articles = articles.filter(a => {
+  allArticles = allArticles.filter(a => {
     const key = a.title.toLowerCase().trim().substring(0, 60);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
-
-  articles.sort((a, b) => b.date - a.date);
-
-  return articles;
+  allArticles.sort((a, b) => b.date - a.date);
 }
 
 // ===================== RENDER =====================
@@ -1612,8 +1632,10 @@ function startCountdown() {
 // ===================== MAIN =====================
 async function refreshData() {
   try {
-    allArticles = await fetchAllSources();
+    allArticles = []; // clear for fresh load
+    await fetchAllSources();
     document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+    // Final render (sources already rendered progressively)
     renderFeed();
     renderLiveBlog();
     renderSourceList();
