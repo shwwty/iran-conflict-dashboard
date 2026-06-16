@@ -1019,12 +1019,15 @@
   <div class="map-head">
     <div>
       <h2>Live-Flugverkehr — Naher Osten</h2>
-      <p>Echtzeit-Flugbewegungen über dem Konfliktgebiet via Flightradar24. Zeigt zivilen und teilweise militärischen Flugverkehr. Klicke auf ein Flugzeug für Details.</p>
+      <p>Echtzeit-Flugbewegungen über dem Konfliktgebiet via ADS-B Exchange. Zeigt zivilen und militärischen Flugverkehr (ADS-B-Transponder). Klicke auf ein Flugzeug für Details zu Flugnummer, Höhe und Geschwindigkeit.</p>
     </div>
   </div>
   <div class="embed-container" id="flights-container">
     <iframe id="flights-iframe" src="" style="width:100%;height:72vh;min-height:460px;border:1px solid var(--border);border-radius:12px;background:var(--bg-secondary);" allowfullscreen loading="lazy"></iframe>
-    <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">Quelle: <a href="https://www.flightradar24.com" target="_blank" style="color:var(--text-secondary)">Flightradar24</a> — Echtzeit-Flugdaten</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+      Quelle: <a href="https://globe.adsbexchange.com" target="_blank" style="color:var(--text-secondary)">ADS-B Exchange</a> — Unzensierte Echtzeit-Flugdaten (keine Filterung durch Airlines) ·
+      Alternative: <a href="https://www.flightradar24.com/30.0,50.0/5" target="_blank" style="color:var(--text-secondary)">Flightradar24 öffnen</a>
+    </div>
   </div>
 </section>
 
@@ -1537,9 +1540,9 @@ function switchTab(tab, el) {
   // Lazy-load flight iframe (only first time)
   if (tab === 'flights') {
     const fr = document.getElementById('flights-iframe');
-    if (fr && !fr.src.includes('flightradar')) {
-      // Flightradar24 embed centered on Iran/Middle East region
-      fr.src = 'https://www.flightradar24.com/simple_index.php?lat=30.0&lon=50.0&z=5';
+    if (fr && !fr.src.includes('adsbexchange')) {
+      // ADS-B Exchange — unfiltered, allows iframe embedding
+      fr.src = 'https://globe.adsbexchange.com/?lat=30.0&lon=50.0&zoom=5&hideButtons&hideSidebar';
     }
   }
 
@@ -1594,24 +1597,42 @@ function initMap() {
     scrollWheelZoom: true
   });
 
-  // Political base map (dark)
+  // ---- Base map modes ----
+  // Dark political (default)
   const darkPolitical = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
   });
-  // Labels as separate layer so GeoJSON sits between base and labels
   const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane'
   });
+  // Light political
   const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
   });
   const politicalLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane'
   });
+  // Topographic
+  const topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenTopoMap (CC-BY-SA) &copy; OpenStreetMap', subdomains: 'abc', maxZoom: 17
+  });
+  // Population density = dark base + NASA SEDAC overlay
+  const darkForPop = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19
+  });
+  const popOverlay = L.tileLayer(
+    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GPW_Population_Density_2020/default/2020-01-01/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png',
+    { attribution: 'Population: NASA SEDAC GPW v4', maxNativeZoom: 7, maxZoom: 19, opacity: 0.85 }
+  );
+  const popLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane'
+  });
 
   const baseLayers = {
     'Dunkel (Standard)': L.layerGroup([darkPolitical, labels]),
-    'Politisch (hell)': L.layerGroup([political, politicalLabels])
+    'Politisch (hell)': L.layerGroup([political, politicalLabels]),
+    'Topografisch': topographic,
+    'Bevölkerungsdichte': L.layerGroup([darkForPop, popOverlay, popLabels])
   };
 
   baseLayers['Dunkel (Standard)'].addTo(map);
